@@ -1,0 +1,4 @@
+__pycache__/
+traffic.db
+.venv/
+.env
