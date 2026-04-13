@@ -1,0 +1,48 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  acrName: trafficapiregistry
+  acrLoginServer: trafficapiregistry.azurecr.io
+  imageName: traffic-api
+  containerAppName: traffic-api
+  resourceGroup: traffic-api-rg
+
+stages:
+
+- stage: Build
+  displayName: Build and Push Docker Image
+  jobs:
+  - job: Build
+    steps:
+    - task: AzureCLI@2
+      displayName: Build and Push to ACR
+      inputs:
+        azureSubscription: 'Azure-Service-Connection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az acr login --name $(acrName)
+          docker build -t $(acrLoginServer)/$(imageName):$(Build.BuildId) .
+          docker push $(acrLoginServer)/$(imageName):$(Build.BuildId)
+
+- stage: Deploy
+  displayName: Deploy to Container App
+  dependsOn: Build
+  jobs:
+  - job: Deploy
+    steps:
+    - task: AzureCLI@2
+      displayName: Deploy to Azure Container Apps
+      inputs:
+        azureSubscription: 'Azure-Service-Connection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az containerapp update \
+            --name $(containerAppName) \
+            --resource-group $(resourceGroup) \
+            --image $(acrLoginServer)/$(imageName):$(Build.BuildId)
