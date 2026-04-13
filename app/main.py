@@ -69,3 +69,7 @@ def get_congestion_report(db: Session = Depends(get_db)):
         "congested_segments_count": len(congested_segments),
         "details": congested_segments
     }
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
